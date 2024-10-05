@@ -27,7 +27,7 @@ contract Playground is Test {
         deal(swapper, INITIAL_ETH_BALANCE);
 
         vm.startPrank(swapper);
-        weth.deposit{value:INITIAL_ETH_BALANCE}();
+        weth.deposit{value: INITIAL_ETH_BALANCE}();
         IERC20(WETH).approve(address(UNISWAP_V2_ROUTER_02), type(uint256).max);
         vm.stopPrank();
 
@@ -73,10 +73,11 @@ contract Playground is Test {
         path[2] = MKR;
 
         uint256 amountIn = INITIAL_ETH_BALANCE;
-        uint256 amountOutMin = 0.1 ether;
+        uint256 amountOutMin = 1e17;
 
         vm.prank(swapper);
-        uint256[] memory amounts = routerV2.swapExactTokensForTokens(amountIn, amountOutMin, path, swapper, block.timestamp + 60);
+        uint256[] memory amounts =
+            routerV2.swapExactTokensForTokens(amountIn, amountOutMin, path, swapper, block.timestamp + 60);
 
         assertEq(amountIn, amounts[0]);
         assertEq(IERC20(WETH).balanceOf(swapper), 0);
@@ -94,14 +95,36 @@ contract Playground is Test {
         path[2] = MKR;
 
         uint256 amountIn = INITIAL_ETH_BALANCE;
-        uint256 amountOutMin = 0.1 ether;
+        uint256 amountOutMin = 1e17;
 
         vm.prank(swapper);
-        uint256[] memory amounts = routerV2.swapExactETHForTokens{value: amountIn}(amountOutMin, path, swapper, block.timestamp + 60);
+        uint256[] memory amounts =
+            routerV2.swapExactETHForTokens{value: amountIn}(amountOutMin, path, swapper, block.timestamp);
 
         assertEq(amountIn, amounts[0]);
         assertEq(swapper.balance, 0);
         assertGe(mkr.balanceOf(swapper), amountOutMin);
+
+        console2.log("WETH", amounts[0]);
+        console2.log("DAI", amounts[1]);
+        console2.log("MKR", amounts[2]);
+    }
+
+    function test_swapTokensForExactTokens() public dealWeth {
+        address[] memory path = new address[](3);
+        path[0] = WETH;
+        path[1] = DAI;
+        path[2] = MKR;
+
+        uint256 amountOut = 1e17;
+        uint256 amountInMax = INITIAL_ETH_BALANCE;
+
+        vm.prank(swapper);
+        uint256[] memory amounts =
+            routerV2.swapTokensForExactTokens(amountOut, amountInMax, path, swapper, block.timestamp);
+
+        assertEq(amountOut, amounts[2]);
+        assertEq(mkr.balanceOf(swapper), amountOut);
 
         console2.log("WETH", amounts[0]);
         console2.log("DAI", amounts[1]);
