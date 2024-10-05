@@ -15,6 +15,25 @@ contract Playground is Test {
 
     IUniswapV2Router02 routerV2 = IUniswapV2Router02(UNISWAP_V2_ROUTER_02);
 
+    address swapper = makeAddr("swapper");
+    uint256 INITIAL_ETH_BALANCE = 10 ether;
+
+    modifier dealEth() {
+        deal(swapper, INITIAL_ETH_BALANCE);
+        _;
+    }
+
+    modifier dealWeth() {
+        deal(swapper, INITIAL_ETH_BALANCE);
+
+        vm.startPrank(swapper);
+        weth.deposit{value:INITIAL_ETH_BALANCE}();
+        IERC20(WETH).approve(address(UNISWAP_V2_ROUTER_02), type(uint256).max);
+        vm.stopPrank();
+
+        _;
+    }
+
     function test_getAmountsOut() public view {
         address[] memory path = new address[](3);
         path[0] = WETH;
@@ -23,6 +42,8 @@ contract Playground is Test {
 
         uint256 amountIn = 1 ether;
         uint256[] memory amounts = routerV2.getAmountsOut(amountIn, path);
+
+        assertEq(amountIn, amounts[0]);
 
         console2.log("WETH", amounts[0]);
         console2.log("DAI", amounts[1]);
@@ -37,6 +58,50 @@ contract Playground is Test {
 
         uint256 amountOut = 5e17;
         uint256[] memory amounts = routerV2.getAmountsIn(amountOut, path);
+
+        assertEq(amountOut, amounts[2]);
+
+        console2.log("WETH", amounts[0]);
+        console2.log("DAI", amounts[1]);
+        console2.log("MKR", amounts[2]);
+    }
+
+    function test_swapExactTokensForTokens() public dealWeth {
+        address[] memory path = new address[](3);
+        path[0] = WETH;
+        path[1] = DAI;
+        path[2] = MKR;
+
+        uint256 amountIn = INITIAL_ETH_BALANCE;
+        uint256 amountOutMin = 0.1 ether;
+
+        vm.prank(swapper);
+        uint256[] memory amounts = routerV2.swapExactTokensForTokens(amountIn, amountOutMin, path, swapper, block.timestamp + 60);
+
+        assertEq(amountIn, amounts[0]);
+        assertEq(IERC20(WETH).balanceOf(swapper), 0);
+        assertGe(mkr.balanceOf(swapper), amountOutMin);
+
+        console2.log("WETH", amounts[0]);
+        console2.log("DAI", amounts[1]);
+        console2.log("MKR", amounts[2]);
+    }
+
+    function test_swapExactEthForTokens() public dealEth {
+        address[] memory path = new address[](3);
+        path[0] = WETH;
+        path[1] = DAI;
+        path[2] = MKR;
+
+        uint256 amountIn = INITIAL_ETH_BALANCE;
+        uint256 amountOutMin = 0.1 ether;
+
+        vm.prank(swapper);
+        uint256[] memory amounts = routerV2.swapExactETHForTokens{value: amountIn}(amountOutMin, path, swapper, block.timestamp + 60);
+
+        assertEq(amountIn, amounts[0]);
+        assertEq(swapper.balance, 0);
+        assertGe(mkr.balanceOf(swapper), amountOutMin);
 
         console2.log("WETH", amounts[0]);
         console2.log("DAI", amounts[1]);
