@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "v2-periphery/interfaces/IWETH.sol";
@@ -45,9 +45,9 @@ contract Playground is Test {
 
         assertEq(amountIn, amounts[0]);
 
-        console2.log("WETH", amounts[0]);
-        console2.log("DAI", amounts[1]);
-        console2.log("MKR", amounts[2]);
+        console.log("WETH", amounts[0]);
+        console.log("DAI", amounts[1]);
+        console.log("MKR", amounts[2]);
     }
 
     function test_getAmountsIn() public view {
@@ -61,9 +61,9 @@ contract Playground is Test {
 
         assertEq(amountOut, amounts[2]);
 
-        console2.log("WETH", amounts[0]);
-        console2.log("DAI", amounts[1]);
-        console2.log("MKR", amounts[2]);
+        console.log("WETH", amounts[0]);
+        console.log("DAI", amounts[1]);
+        console.log("MKR", amounts[2]);
     }
 
     function test_swapExactTokensForTokens() public dealWeth {
@@ -83,9 +83,9 @@ contract Playground is Test {
         assertEq(IERC20(WETH).balanceOf(swapper), 0);
         assertGe(mkr.balanceOf(swapper), amountOutMin);
 
-        console2.log("WETH", amounts[0]);
-        console2.log("DAI", amounts[1]);
-        console2.log("MKR", amounts[2]);
+        console.log("WETH", amounts[0]);
+        console.log("DAI", amounts[1]);
+        console.log("MKR", amounts[2]);
     }
 
     function test_swapExactEthForTokens() public dealEth {
@@ -105,9 +105,9 @@ contract Playground is Test {
         assertEq(swapper.balance, 0);
         assertGe(mkr.balanceOf(swapper), amountOutMin);
 
-        console2.log("WETH", amounts[0]);
-        console2.log("DAI", amounts[1]);
-        console2.log("MKR", amounts[2]);
+        console.log("WETH", amounts[0]);
+        console.log("DAI", amounts[1]);
+        console.log("MKR", amounts[2]);
     }
 
     function test_swapTokensForExactTokens() public dealWeth {
@@ -126,8 +126,8 @@ contract Playground is Test {
         assertEq(amountOut, amounts[2]);
         assertEq(mkr.balanceOf(swapper), amountOut);
 
-        console2.log("WETH", amounts[0]);
-        console2.log("DAI", amounts[1]);
-        console2.log("MKR", amounts[2]);
+        console.log("WETH", amounts[0]);
+        console.log("DAI", amounts[1]);
+        console.log("MKR", amounts[2]);
     }
 }
