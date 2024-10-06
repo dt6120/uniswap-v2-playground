@@ -8,7 +8,7 @@ import {IWETH} from "v2-periphery/interfaces/IWETH.sol";
 
 import {WETH, DAI, MKR, UNISWAP_V2_ROUTER_02} from "../src/Constants.sol";
 
-contract Playground is Test {
+contract RouterPlayground is Test {
     IWETH weth = IWETH(WETH);
     IERC20 dai = IERC20(DAI);
     IERC20 mkr = IERC20(MKR);
