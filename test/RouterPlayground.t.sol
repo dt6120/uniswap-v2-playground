@@ -2,11 +2,12 @@
 pragma solidity 0.8.27;
 
 import {Test, console} from "forge-std/Test.sol";
+import {IUniswapV2Pair} from "v2-core/interfaces/IUniswapV2Pair.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IWETH} from "v2-periphery/interfaces/IWETH.sol";
 
-import {WETH, DAI, MKR, UNISWAP_V2_ROUTER_02} from "../src/Constants.sol";
+import {WETH, DAI, MKR, UNISWAP_V2_PAIR_DAI_WETH, UNISWAP_V2_ROUTER_02} from "../src/Constants.sol";
 
 contract RouterPlayground is Test {
     IWETH weth = IWETH(WETH);
@@ -14,22 +15,34 @@ contract RouterPlayground is Test {
     IERC20 mkr = IERC20(MKR);
 
     IUniswapV2Router02 routerV2 = IUniswapV2Router02(UNISWAP_V2_ROUTER_02);
+    IUniswapV2Pair wethDaiPair = IUniswapV2Pair(UNISWAP_V2_PAIR_DAI_WETH);
 
-    address swapper = makeAddr("swapper");
+    address user = makeAddr("user");
+
     uint256 INITIAL_ETH_BALANCE = 10 ether;
+    uint256 INITIAL_TOKEN_BALANCE = 10000e18;
 
     modifier dealEth() {
-        deal(swapper, INITIAL_ETH_BALANCE);
+        deal(user, INITIAL_ETH_BALANCE);
         _;
     }
 
     modifier dealWeth() {
-        deal(swapper, INITIAL_ETH_BALANCE);
+        deal(user, INITIAL_ETH_BALANCE);
 
-        vm.startPrank(swapper);
+        vm.startPrank(user);
         weth.deposit{value: INITIAL_ETH_BALANCE}();
-        IERC20(WETH).approve(address(UNISWAP_V2_ROUTER_02), type(uint256).max);
+        IERC20(WETH).approve(UNISWAP_V2_ROUTER_02, type(uint256).max);
         vm.stopPrank();
+
+        _;
+    }
+
+    modifier dealToken(address token) {
+        deal(token, user, INITIAL_TOKEN_BALANCE, true);
+
+        vm.prank(user);
+        IERC20(token).approve(UNISWAP_V2_ROUTER_02, type(uint256).max);
 
         _;
     }
@@ -75,13 +88,13 @@ contract RouterPlayground is Test {
         uint256 amountIn = INITIAL_ETH_BALANCE;
         uint256 amountOutMin = 1e17;
 
-        vm.prank(swapper);
+        vm.prank(user);
         uint256[] memory amounts =
-            routerV2.swapExactTokensForTokens(amountIn, amountOutMin, path, swapper, block.timestamp + 60);
+            routerV2.swapExactTokensForTokens(amountIn, amountOutMin, path, user, block.timestamp + 60);
 
         assertEq(amountIn, amounts[0]);
-        assertEq(IERC20(WETH).balanceOf(swapper), 0);
-        assertGe(mkr.balanceOf(swapper), amountOutMin);
+        assertEq(IERC20(WETH).balanceOf(user), 0);
+        assertGe(mkr.balanceOf(user), amountOutMin);
 
         console.log("WETH", amounts[0]);
         console.log("DAI", amounts[1]);
@@ -97,13 +110,13 @@ contract RouterPlayground is Test {
         uint256 amountIn = INITIAL_ETH_BALANCE;
         uint256 amountOutMin = 1e17;
 
-        vm.prank(swapper);
+        vm.prank(user);
         uint256[] memory amounts =
-            routerV2.swapExactETHForTokens{value: amountIn}(amountOutMin, path, swapper, block.timestamp);
+            routerV2.swapExactETHForTokens{value: amountIn}(amountOutMin, path, user, block.timestamp);
 
         assertEq(amountIn, amounts[0]);
-        assertEq(swapper.balance, 0);
-        assertGe(mkr.balanceOf(swapper), amountOutMin);
+        assertEq(user.balance, 0);
+        assertGe(mkr.balanceOf(user), amountOutMin);
 
         console.log("WETH", amounts[0]);
         console.log("DAI", amounts[1]);
@@ -119,15 +132,69 @@ contract RouterPlayground is Test {
         uint256 amountOut = 1e17;
         uint256 amountInMax = INITIAL_ETH_BALANCE;
 
-        vm.prank(swapper);
+        vm.prank(user);
         uint256[] memory amounts =
-            routerV2.swapTokensForExactTokens(amountOut, amountInMax, path, swapper, block.timestamp);
+            routerV2.swapTokensForExactTokens(amountOut, amountInMax, path, user, block.timestamp);
 
         assertEq(amountOut, amounts[2]);
-        assertEq(mkr.balanceOf(swapper), amountOut);
+        assertEq(mkr.balanceOf(user), amountOut);
 
         console.log("WETH", amounts[0]);
         console.log("DAI", amounts[1]);
         console.log("MKR", amounts[2]);
+    }
+
+    function test_addLiquidity() public dealWeth dealToken(DAI) {
+        uint256 startingWethBalance = IERC20(WETH).balanceOf(user);
+        uint256 startingDaiBalance = dai.balanceOf(user);
+
+        vm.prank(user);
+        (uint256 amountA, uint256 amountB, uint256 liquidity) = routerV2.addLiquidity({
+            tokenA: WETH,
+            tokenB: DAI,
+            amountADesired: 1 ether,
+            amountBDesired: 3000e18,
+            amountAMin: 0,
+            amountBMin: 0,
+            to: user,
+            deadline: block.timestamp
+        });
+
+        uint256 endingWethBalance = IERC20(WETH).balanceOf(user);
+        uint256 endingDaiBalance = dai.balanceOf(user);
+
+        assertEq(wethDaiPair.balanceOf(user), liquidity);
+        assertEq(startingWethBalance - endingWethBalance, amountA);
+        assertEq(startingDaiBalance - endingDaiBalance, amountB);
+
+        console.log("WETH added", amountA);
+        console.log("DAI added", amountB);
+        console.log("LP shares minted", liquidity);
+    }
+
+    function test_addLiquidityEth() public dealEth dealToken(DAI) {
+        uint256 startingEthBalance = user.balance;
+        uint256 startingDaiBalance = dai.balanceOf(user);
+
+        vm.prank(user);
+        (uint256 amountA, uint256 amountB, uint256 liquidity) = routerV2.addLiquidityETH{value: 1 ether}({
+            token: DAI,
+            amountTokenDesired: 3000e18,
+            amountTokenMin: 0,
+            amountETHMin: 0,
+            to: user,
+            deadline: block.timestamp
+        });
+
+        uint256 endingEthBalance = user.balance;
+        uint256 endingDaiBalance = dai.balanceOf(user);
+
+        assertEq(wethDaiPair.balanceOf(user), liquidity);
+        assertEq(startingDaiBalance - endingDaiBalance, amountA);
+        assertEq(startingEthBalance - endingEthBalance, amountB);
+
+        console.log("WETH added", amountA);
+        console.log("DAI added", amountB);
+        console.log("LP shares minted", liquidity);
     }
 }
