@@ -34,7 +34,7 @@ contract UniswapV2FlashSwap {
     }
 
     function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {
-        if (sender != address(this)) {
+        if (msg.sender != address(pair) || sender != address(this)) {
             revert UniswapV2FlashSwap__InvalidCaller();
         }
 
@@ -46,6 +46,7 @@ contract UniswapV2FlashSwap {
 
         emit FlashSwapExecuted(amountBorrowed, swapFee);
 
-        SafeERC20.safeTransferFrom(IERC20(token), swapCaller, address(pair), amountToRepay);
+        SafeERC20.safeTransferFrom(IERC20(token), swapCaller, address(this), swapFee);
+        SafeERC20.safeTransfer(IERC20(token), address(pair), amountToRepay);
     }
 }
