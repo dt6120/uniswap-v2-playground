@@ -42,5 +42,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --fork-url ${{ secrets.ETH_RPC }} -vvv
+          forge test --fork-url ${{ secrets.ETH_RPC }}
         id: test
