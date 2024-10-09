@@ -7,7 +7,7 @@ import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Pair} from "v2-core/interfaces/IUniswapV2Pair.sol";
 import {IWETH} from "v2-periphery/interfaces/IWETH.sol";
 
-import {WETH, DAI, MKR, UNISWAP_V2_FACTORY} from "../src/Constants.sol";
+import {WETH, DAI, MKR, UNISWAP_V2_FACTORY} from "../../src/Constants.sol";
 
 contract FactoryPlayground is Test {
     IWETH weth = IWETH(WETH);
