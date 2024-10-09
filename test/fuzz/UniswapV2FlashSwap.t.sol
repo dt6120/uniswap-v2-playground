@@ -18,7 +18,7 @@ contract UniswapV2FlashSwapTest is Test {
     function test_uniswapV2FlashSwap(uint256 amount) public {
         address token0 = flashSwap.pair().token0();
         address token1 = flashSwap.pair().token1();
-        (uint112 reserve0, uint112 reserve1, ) = flashSwap.pair().getReserves();
+        (uint112 reserve0, uint112 reserve1,) = flashSwap.pair().getReserves();
 
         // vm.assume(token == token0 || token == token1);
         address token = amount % 2 == 0 ? token0 : token1;
