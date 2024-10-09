@@ -22,5 +22,18 @@ contract StatefulFuzzer is StdInvariant, Test {
         targetContract(address(handler));
     }
 
-    function statefulFuzz_uniswapV2FlashSwap() public {}
+    function statefulFuzz_uniswapV2FlashSwap() public {
+        /**
+         * NOTE
+         * UniswapV2 inherently checks for invariant fulfillment in its functions.
+         * So if the flashswap executes without reverting, it can be said the invariant holds true
+         */
+
+        /**
+         * NOTE
+         * This invariant and handler based test case does not add more value than the existing stateless fuzz test
+         * as there is no point of adding depth to the single function call of flash swap.
+         * I wrote this just to practice writing stateful fuzz tests with handler based appraoch.
+         */
+    }
 }
