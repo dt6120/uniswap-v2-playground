@@ -14,15 +14,15 @@ contract Handler is Test {
         flashSwap = _flashSwap;
     }
 
-    function uniswapV2FlashSwap(address token, uint256 amount) public {
+    function uniswapV2FlashSwap(uint256 amount) public {
         address token0 = flashSwap.pair().token0();
         address token1 = flashSwap.pair().token1();
         (uint112 reserve0, uint112 reserve1,) = flashSwap.pair().getReserves();
 
-        vm.assume(token == token0 || token == token1);
+        address token = amount % 2 == 0 ? token0 : token1;
 
         uint256 reserve = token == token0 ? reserve0 : reserve1;
-        amount = bound(amount, 0, reserve / 2);
+        amount = bound(amount, 1, reserve / 2);
 
         deal(token, swapCaller, amount * 2);
 
