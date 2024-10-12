@@ -7,7 +7,7 @@ import {IWETH} from "v2-periphery/interfaces/IWETH.sol";
 import {IUniswapV2Pair} from "v2-core/interfaces/IUniswapV2Pair.sol";
 import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
-import {UniswapV2Arbitrage1} from "../../src/UniswapV2Arbitrage1.sol";
+import {UniswapV2Arbitrage2} from "../../src/UniswapV2Arbitrage2.sol";
 import {
     WETH,
     DAI,
@@ -21,7 +21,7 @@ import {
     SUSHISWAP_V2_ROUTER_02
 } from "../../src/Constants.sol";
 
-contract UniswapV2Arbitrage1Test is Test {
+contract UniswapV2Arbitrage2Test is Test {
     IWETH weth = IWETH(WETH);
     IERC20 dai = IERC20(DAI);
 
@@ -31,10 +31,10 @@ contract UniswapV2Arbitrage1Test is Test {
     uint256 INITIAL_ETH_BALANCE = 1000 ether;
     uint256 INITIAL_TOKEN_BALANCE = 3e6 * 1e18;
 
-    UniswapV2Arbitrage1 arb;
+    UniswapV2Arbitrage2 arb;
 
     function setUp() public {
-        arb = new UniswapV2Arbitrage1();
+        arb = new UniswapV2Arbitrage2();
 
         deal(whale, INITIAL_ETH_BALANCE * 10);
         deal(WETH, whale, INITIAL_ETH_BALANCE * 10);
@@ -95,41 +95,17 @@ contract UniswapV2Arbitrage1Test is Test {
         _;
     }
 
-    function test_arbitrageUniswapToSushiswap() public dealToken(DAI) reduceUniswapWethPrice {
-        uint256 amountIn = 1000e18;
-
-        vm.startPrank(user);
-        dai.approve(address(arb), type(uint256).max);
-        uint256 profit = arb.swap(
-            UniswapV2Arbitrage1.SwapParams({
-                router0: UNISWAP_V2_ROUTER_02,
-                router1: SUSHISWAP_V2_ROUTER_02,
-                tokenIn: DAI,
-                tokenOut: WETH,
-                amountIn: amountIn,
-                minProfit: amountIn / 10
-            })
-        );
-        vm.stopPrank();
-
-        console.log("profit", profit);
-    }
-
-    function test_flashArbitrageUniswapToSushiswap() public reduceUniswapWethPrice {
+    function test_flashArbitrage2UniswapToSushiswap() public reduceUniswapWethPrice {
         uint256 amountIn = 1000e18;
 
         vm.prank(user);
-        arb.flashSwap(
-            UNISWAP_V2_PAIR_DAI_MKR,
-            UniswapV2Arbitrage1.SwapParams({
-                router0: UNISWAP_V2_ROUTER_02,
-                router1: SUSHISWAP_V2_ROUTER_02,
-                tokenIn: DAI,
-                tokenOut: WETH,
-                amountIn: amountIn,
-                minProfit: amountIn / 10
-            })
-        );
+        arb.flashSwap({
+            pair0: UNISWAP_V2_PAIR_DAI_WETH,
+            pair1: SUSHISWAP_V2_PAIR_DAI_WETH,
+            isZeroForOne: true,
+            amountIn: amountIn,
+            minProfit: amountIn / 100
+        });
 
         console.log("profit", dai.balanceOf(user));
     }

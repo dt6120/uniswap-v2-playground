@@ -45,7 +45,6 @@ contract UniswapV2Arbitrage1 {
 
         (address swapCaller, address pair, SwapParams memory params) = abi.decode(data, (address, address, SwapParams));
 
-        // execute arbitrage
         uint256 amountOut = _swap(params);
 
         uint256 swapFee = (params.amountIn * 3) / 997 + 1;
